@@ -62,7 +62,6 @@ export default function DashboardPage() {
   const [expiresAt, setExpiresAt] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [collectionImageUri, setCollectionImageUri] = useState<string | null>(null);
-  const [manualUri, setManualUri] = useState("");
   const [submitLoading, setSubmitLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [lastCredentialPda, setLastCredentialPda] = useState<string | null>(null);
@@ -161,40 +160,34 @@ export default function DashboardPage() {
         ? BigInt(Math.floor(new Date(expiresAt).getTime() / 1000))
         : null;
 
-      let metadataUri: string;
+      if (!wallet.wallet) throw new Error("No wallet connected");
+      const irys = await createIrysUploader(wallet.wallet.adapter, "devnet");
 
-      if (manualUri.trim()) {
-        metadataUri = manualUri.trim();
-      } else {
-        if (!wallet.wallet) throw new Error("No wallet connected");
-        const irys = await createIrysUploader(wallet.wallet.adapter, "devnet");
+      // If issuer chose a custom badge — upload it; otherwise reuse the collection logo.
+      let resolvedImageUri = collectionImageUri ?? "ar://placeholder";
+      if (imageFile) resolvedImageUri = await irys.uploadFile(imageFile);
 
-        // If issuer chose a custom badge — upload it; otherwise reuse the collection logo.
-        let resolvedImageUri = collectionImageUri ?? "ar://placeholder";
-        if (imageFile) resolvedImageUri = await irys.uploadFile(imageFile);
+      const metadata = buildCredentialMetadataJson({
+        credentialName: credentialName || `${skill} Level ${level}`,
+        issuerName: freshIssuer.name,
+        issuerPda: issuerPda.toBase58(),
+        issuerCollection: freshIssuer.collection?.toBase58() ?? null,
+        recipientPubkey: recipientPubkey.toBase58(),
+        periodFrom: periodFrom || null,
+        periodTo: periodTo || null,
+        skills: skillsList
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        level: lvl,
+        expiresAt: expiresAtSec !== null ? Number(expiresAtSec) : null,
+        credentialPda: credPda.toBase58(),
+        coreAsset: assetKeypair.publicKey.toBase58(),
+        imageUri: resolvedImageUri,
+        programId: PROGRAM_ID.toBase58(),
+      });
 
-        const metadata = buildCredentialMetadataJson({
-          credentialName: credentialName || `${skill} Level ${level}`,
-          issuerName: freshIssuer.name,
-          issuerPda: issuerPda.toBase58(),
-          issuerCollection: freshIssuer.collection?.toBase58() ?? null,
-          recipientPubkey: recipientPubkey.toBase58(),
-          periodFrom: periodFrom || null,
-          periodTo: periodTo || null,
-          skills: skillsList
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean),
-          level: lvl,
-          expiresAt: expiresAtSec !== null ? Number(expiresAtSec) : null,
-          credentialPda: credPda.toBase58(),
-          coreAsset: assetKeypair.publicKey.toBase58(),
-          imageUri: resolvedImageUri,
-          programId: PROGRAM_ID.toBase58(),
-        });
-
-        metadataUri = await irys.uploadJson(metadata);
-      }
+      const metadataUri = await irys.uploadJson(metadata);
 
       if (!freshIssuer.collection) throw new Error("Issuer has no collection — run verify first");
 
@@ -433,17 +426,6 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            <div className="flex flex-col gap-1 sm:col-span-2">
-              <label className="text-xs text-gray-500 uppercase tracking-wide">
-                Manual metadata URI (localnet / testing — skips Irys upload)
-              </label>
-              <input
-                value={manualUri}
-                onChange={(e) => setManualUri(e.target.value)}
-                placeholder="ar://… — fill to skip Irys"
-                className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm font-mono text-white placeholder-gray-600 focus:outline-none focus:border-purple-500"
-              />
-            </div>
           </div>
 
           <button
@@ -451,11 +433,7 @@ export default function DashboardPage() {
             disabled={submitLoading || !recipient}
             className="self-start rounded-lg bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed px-5 py-2.5 text-sm font-medium"
           >
-            {submitLoading
-              ? manualUri.trim()
-                ? "Signing…"
-                : "Uploading + signing…"
-              : "Issue Credential"}
+            {submitLoading ? "Uploading + signing…" : "Issue Credential"}
           </button>
 
           {submitError && (
