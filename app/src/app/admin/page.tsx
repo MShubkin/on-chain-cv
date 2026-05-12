@@ -208,7 +208,9 @@ export default function AdminPage() {
   const pendingIssuers = issuers.filter(
     (r) => !r.issuer.isVerified && r.issuer.deactivatedAt === null
   );
-  const verifiedIssuers = issuers.filter((r) => r.issuer.isVerified);
+  const verifiedIssuers = issuers.filter(
+    (r) => r.issuer.isVerified && r.issuer.deactivatedAt === null
+  );
 
   return (
     <div className="flex flex-col gap-10">
