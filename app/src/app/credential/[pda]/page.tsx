@@ -16,6 +16,7 @@ import {
   isExpired,
   explorerUrl,
   checkAssetFrozen,
+  arToHttp,
 } from "@/lib/program";
 import { CredentialMetadata } from "@/lib/irys";
 
@@ -68,9 +69,7 @@ export default function CredentialPage() {
       if (!iss?.isVerified || iss.deactivatedAt !== null) { setStatus("issuer_unverified"); return; }
 
       // Parallel: check asset.frozen on-chain + fetch Arweave metadata for JSON↔PDA link
-      const arweaveUri = cred.metadataUri
-        .replace("ar://", "https://arweave.net/")
-        .replace("https://gateway.irys.xyz/", "https://arweave.net/");
+      const arweaveUri = arToHttp(cred.metadataUri);
 
       const [frozen, metaJson] = await Promise.all([
         checkAssetFrozen(connection, cred.coreAsset),
@@ -201,9 +200,7 @@ export default function CredentialPage() {
         {metadata?.image && (
           <div className="flex justify-center pt-1">
             <img
-              src={metadata.image
-                .replace("ar://", "https://arweave.net/")
-                .replace("https://gateway.irys.xyz/", "https://arweave.net/")}
+              src={arToHttp(metadata.image)}
               alt={displayName}
               className="w-24 h-24 rounded-2xl object-cover border border-gray-700"
             />

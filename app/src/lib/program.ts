@@ -334,6 +334,21 @@ export function explorerUrl(address: PublicKey): string {
   return `https://explorer.solana.com/address/${address.toBase58()}${explorerClusterParam()}`;
 }
 
+// Converts ar:// or Irys gateway URIs to a fetchable HTTP URL.
+// On devnet, ar:// resolves to devnet.irys.xyz — data uploaded there is not
+// on Arweave mainnet and would 404 if pointed at arweave.net.
+export function arToHttp(uri: string): string {
+  const rpc = process.env.NEXT_PUBLIC_RPC_ENDPOINT ?? "http://127.0.0.1:8899";
+  const isDevnet = rpc.includes("devnet");
+  if (uri.startsWith("ar://")) {
+    const txId = uri.slice(5);
+    return isDevnet
+      ? `https://devnet.irys.xyz/${txId}`
+      : `https://arweave.net/${txId}`;
+  }
+  return uri.replace("https://gateway.irys.xyz/", "https://arweave.net/");
+}
+
 // ── Credential: discriminators ────────────────────────────────────────────────
 
 // sha256("global:issue_credential")[0..8]

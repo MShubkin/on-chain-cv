@@ -9,6 +9,7 @@ import {
   IssuerRegistryAccount,
   explorerUrl,
   fetchCollectionUri,
+  arToHttp,
 } from "@/lib/program";
 import type { CollectionMetadata } from "@/lib/irys";
 
@@ -39,20 +40,11 @@ export default function IssuerPage() {
         if (reg.collection) {
           const uri = await fetchCollectionUri(connection, reg.collection);
           if (uri) {
-            const httpUri = uri
-              .replace("ar://", "https://arweave.net/")
-              .replace("https://gateway.irys.xyz/", "https://arweave.net/");
-            fetch(httpUri)
+            fetch(arToHttp(uri))
               .then((r) => r.ok ? r.json() : null)
               .then((json) => {
                 const meta = json as CollectionMetadata | null;
-                if (meta?.image) {
-                  setLogoUrl(
-                    meta.image
-                      .replace("ar://", "https://arweave.net/")
-                      .replace("https://gateway.irys.xyz/", "https://arweave.net/")
-                  );
-                }
+                if (meta?.image) setLogoUrl(arToHttp(meta.image));
               })
               .catch(() => {});
           }

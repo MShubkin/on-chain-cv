@@ -12,6 +12,7 @@ import {
   fetchCollectionUri,
   fetchCredentialsByRecipient,
   isExpired,
+  arToHttp,
 } from "@/lib/program";
 import { CredentialMetadata } from "@/lib/irys";
 
@@ -85,16 +86,13 @@ export default function ProfilePage() {
           fetchCollectionUri(connection, issuer.collection)
             .then(async (uri) => {
               if (!uri) return;
-              const arweaveUri = uri
-                .replace("ar://", "https://arweave.net/")
-                .replace("https://gateway.irys.xyz/", "https://arweave.net/");
-              const res = await fetch(arweaveUri);
+              const res = await fetch(arToHttp(uri));
               if (!res.ok) return;
               const json = await res.json();
-              const imageUri = (json.image as string | undefined)
-                ?.replace("ar://", "https://arweave.net/")
-                ?.replace("https://gateway.irys.xyz/", "https://arweave.net/");
-              setLogoUrls((prev) => new Map(prev).set(key, imageUri ?? null));
+              const imageUri = (json.image as string | undefined);
+              setLogoUrls((prev) =>
+                new Map(prev).set(key, imageUri ? arToHttp(imageUri) : null)
+              );
             })
             .catch(() =>
               setLogoUrls((prev) => new Map(prev).set(key, null))
@@ -104,10 +102,7 @@ export default function ProfilePage() {
         // Progressive: fetch Arweave metadata per credential for job title, period, and skills
         enriched.forEach(({ pda, credential }) => {
           const key = pda.toBase58();
-          const uri = credential.metadataUri
-            .replace("ar://", "https://arweave.net/")
-            .replace("https://gateway.irys.xyz/", "https://arweave.net/");
-          fetch(uri)
+          fetch(arToHttp(credential.metadataUri))
             .then((r) => (r.ok ? r.json() : null))
             .then((json) => {
               if (!json) return;
