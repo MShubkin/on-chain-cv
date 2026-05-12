@@ -254,21 +254,6 @@ npm run dev
 
 Switch Phantom to Devnet before connecting.
 
-## Development stages
-
-Built in 8 vertical slices. Each stage ships Anchor instructions, LiteSVM tests, and frontend together, so every stage is runnable end-to-end.
-
-| Stage | Name | What it delivers |
-|---|---|---|
-| 1 | Hello, Platform | `initialize_platform` and `transfer_platform_authority`. Establishes the singleton `PlatformConfig` PDA and admin key management. Proves the Anchor + LiteSVM scaffold works. |
-| 2 | Issuer Onboarding | `register_issuer`, `verify_issuer`, `deactivate_issuer`, `update_issuer_metadata`. Issuers appear on-chain; the admin approves them; an MPL-Core Collection is created per issuer at verification time. Renames propagate to the Collection via CPI. |
-| 3 | First Credential | `issue_credential`. Mints a Credential PDA and a soulbound MPL-Core Asset in one transaction. Introduces `FreezeDelegate` + `PermanentBurnDelegate` plugins, URI whitelist enforcement, and the credential index as a PDA seed. |
-| 4 | Recruiter View | Frontend pages `/issuers`, `/issuer/[pda]`, `/profile/[pubkey]`, `/credential/[pda]`. No new instructions — the value is a shareable link that proves a credential with no backend required. |
-| 5 | Revoke | `revoke_credential`. Burns the MPL-Core Asset in the same transaction that marks the credential revoked. The NFT disappears from Phantom immediately. Dashboard gets a Revoke button. |
-| 6 | Endorsements + Lockup | `endorse_credential` and `close_endorsement`. Third parties can vouch for credentials. Endorsing locks ~0.002 SOL for 30 days. LiteSVM time-travel via `set_sysvar::<Clock>` is introduced to test lockup expiry without waiting. |
-| 7 | Full Lifecycle | `close_credential`. Issuers can reclaim rent from revoked credentials after all endorsements close. Completes the full state machine: issue → endorse → revoke → close. Adds adversarial tests covering unauthorized access, metadata tampering, rename sync, and a full end-to-end flow. |
-| 8 | Devnet + Polish | Deploy to devnet, real Arweave uploads via Irys, end-to-end QA, public URLs. ✅ Live at [onchaincv.app](https://onchaincv.app) |
-
 ## Project structure
 
 ```
