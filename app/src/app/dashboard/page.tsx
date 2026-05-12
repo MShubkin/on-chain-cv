@@ -14,10 +14,12 @@ import {
   buildRevokeCredentialIx,
   deserializeIssuerRegistry,
   fetchCredentialsByIssuer,
+  fetchCollectionUri,
   getCredentialPda,
   getIssuerRegistryPda,
   isExpired,
   explorerUrl,
+  arToHttp,
   PROGRAM_ID,
 } from "@/lib/program";
 import { createIrysUploader, buildCredentialMetadataJson } from "@/lib/irys";
@@ -58,7 +60,8 @@ export default function DashboardPage() {
   const [periodFrom, setPeriodFrom] = useState("");
   const [periodTo, setPeriodTo] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
-  const [imageUri, setImageUri] = useState("ar://placeholder");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [collectionImageUri, setCollectionImageUri] = useState<string | null>(null);
   const [manualUri, setManualUri] = useState("");
   const [submitLoading, setSubmitLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -78,12 +81,25 @@ export default function DashboardPage() {
     setIssuerPda(pda);
     connection
       .getAccountInfo(pda)
-      .then((info) => {
+      .then(async (info) => {
         if (!info) {
           setIssuerError("No issuer registry found. Register at /issuer/register first.");
           return;
         }
-        setIssuer(deserializeIssuerRegistry(Buffer.from(info.data)));
+        const reg = deserializeIssuerRegistry(Buffer.from(info.data));
+        setIssuer(reg);
+        if (reg.collection) {
+          const uri = await fetchCollectionUri(connection, reg.collection);
+          if (uri) {
+            fetch(arToHttp(uri))
+              .then((r) => r.ok ? r.json() : null)
+              .then((json) => {
+                const imageUri = json?.image as string | undefined;
+                if (imageUri) setCollectionImageUri(imageUri);
+              })
+              .catch(() => {});
+          }
+        }
       })
       .catch((e) => setIssuerError(e.message));
   }, [publicKey, connection]);
@@ -153,6 +169,10 @@ export default function DashboardPage() {
         if (!wallet.wallet) throw new Error("No wallet connected");
         const irys = await createIrysUploader(wallet.wallet.adapter, "devnet");
 
+        // If issuer chose a custom badge — upload it; otherwise reuse the collection logo.
+        let resolvedImageUri = collectionImageUri ?? "ar://placeholder";
+        if (imageFile) resolvedImageUri = await irys.uploadFile(imageFile);
+
         const metadata = buildCredentialMetadataJson({
           credentialName: credentialName || `${skill} Level ${level}`,
           issuerName: freshIssuer.name,
@@ -169,7 +189,7 @@ export default function DashboardPage() {
           expiresAt: expiresAtSec !== null ? Number(expiresAtSec) : null,
           credentialPda: credPda.toBase58(),
           coreAsset: assetKeypair.publicKey.toBase58(),
-          imageUri,
+          imageUri: resolvedImageUri,
           programId: PROGRAM_ID.toBase58(),
         });
 
@@ -396,14 +416,21 @@ export default function DashboardPage() {
 
             <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-500 uppercase tracking-wide">
-                Image URI (ar://…)
+                Badge image (optional)
               </label>
               <input
-                value={imageUri}
-                onChange={(e) => setImageUri(e.target.value)}
-                placeholder="ar://badge_image"
-                className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm font-mono text-white placeholder-gray-600 focus:outline-none focus:border-purple-500"
+                type="file"
+                accept="image/*"
+                onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+                className="text-sm text-gray-400"
               />
+              <p className="text-xs text-gray-600">
+                {imageFile
+                  ? `Will upload: ${imageFile.name}`
+                  : collectionImageUri
+                  ? "No file — issuer logo will be used"
+                  : "No file — placeholder will be used"}
+              </p>
             </div>
 
             <div className="flex flex-col gap-1 sm:col-span-2">
