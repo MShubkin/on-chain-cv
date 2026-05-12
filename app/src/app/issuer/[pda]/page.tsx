@@ -8,12 +8,15 @@ import {
   deserializeIssuerRegistry,
   IssuerRegistryAccount,
   explorerUrl,
+  fetchCollectionUri,
 } from "@/lib/program";
+import type { CollectionMetadata } from "@/lib/irys";
 
 export default function IssuerPage() {
   const { connection } = useConnection();
   const { pda } = useParams<{ pda: string }>();
   const [issuer, setIssuer] = useState<IssuerRegistryAccount | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,9 +32,31 @@ export default function IssuerPage() {
     }
     connection
       .getAccountInfo(pdaPubkey)
-      .then((info) => {
+      .then(async (info) => {
         if (!info) { setError("Issuer not found on-chain"); return; }
-        setIssuer(deserializeIssuerRegistry(Buffer.from(info.data)));
+        const reg = deserializeIssuerRegistry(Buffer.from(info.data));
+        setIssuer(reg);
+        if (reg.collection) {
+          const uri = await fetchCollectionUri(connection, reg.collection);
+          if (uri) {
+            const httpUri = uri
+              .replace("ar://", "https://arweave.net/")
+              .replace("https://gateway.irys.xyz/", "https://arweave.net/");
+            fetch(httpUri)
+              .then((r) => r.ok ? r.json() : null)
+              .then((json) => {
+                const meta = json as CollectionMetadata | null;
+                if (meta?.image) {
+                  setLogoUrl(
+                    meta.image
+                      .replace("ar://", "https://arweave.net/")
+                      .replace("https://gateway.irys.xyz/", "https://arweave.net/")
+                  );
+                }
+              })
+              .catch(() => {});
+          }
+        }
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -45,19 +70,28 @@ export default function IssuerPage() {
 
   return (
     <div className="flex flex-col gap-6 max-w-lg">
-      <div>
-        <div className="text-xs font-mono text-purple-400 uppercase tracking-widest mb-2">
-          Issuer Profile
+      <div className="flex items-center gap-4">
+        {logoUrl && (
+          <img
+            src={logoUrl}
+            alt={issuer.name}
+            className="w-16 h-16 rounded-xl object-cover border border-gray-700 shrink-0"
+          />
+        )}
+        <div>
+          <div className="text-xs font-mono text-purple-400 uppercase tracking-widest mb-2">
+            Issuer Profile
+          </div>
+          <h1 className="text-2xl font-bold">{issuer.name}</h1>
+          <a
+            href={issuer.website}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-purple-400 hover:text-purple-300"
+          >
+            {issuer.website} ↗
+          </a>
         </div>
-        <h1 className="text-2xl font-bold">{issuer.name}</h1>
-        <a
-          href={issuer.website}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm text-purple-400 hover:text-purple-300"
-        >
-          {issuer.website} ↗
-        </a>
       </div>
 
       <div className="rounded-xl border border-gray-800 bg-gray-900 p-5 flex flex-col gap-4">
