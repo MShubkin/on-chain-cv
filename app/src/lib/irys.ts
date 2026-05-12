@@ -9,6 +9,7 @@ import { Connection } from "@solana/web3.js";
 // Загружаются на Arweave и передаются как collection_uri при вызове verify_issuer.
 export interface CollectionMetadata {
   name: string;
+  symbol: string;         // required by Metaplex JSON standard; shown in Explorer
   description: string;
   image: string;          // ar://<txId> загруженного логотипа
   external_url?: string;  // сайт организации
@@ -125,6 +126,18 @@ export async function createIrysUploader(
 // Собирает JSON метаданных коллекции по стандарту Metaplex.
 // Суффикс " Credentials" в name повторяет логику on-chain (format!("{} Credentials", name)),
 // чтобы название коллекции в кошельке совпадало с тем, что отображает Explorer.
+// Generates a short ticker-style symbol from the issuer name.
+// "EPAM Systems" → "ES", "Google" → "G", "MIT Open" → "MO" (max 4 chars, uppercase).
+function deriveSymbol(name: string): string {
+  const initials = name
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 4);
+  return initials || name.slice(0, 4).toUpperCase();
+}
+
 export function buildCollectionMetadataJson(params: {
   issuerName: string;
   description: string;
@@ -133,6 +146,7 @@ export function buildCollectionMetadataJson(params: {
 }): CollectionMetadata {
   return {
     name: `${params.issuerName} Credentials`,
+    symbol: deriveSymbol(params.issuerName),
     description: params.description,
     image: params.imageUri,
     external_url: params.externalUrl,
