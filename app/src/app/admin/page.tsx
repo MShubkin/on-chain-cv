@@ -58,6 +58,8 @@ export default function AdminPage() {
   const [transferDone, setTransferDone] = useState(false);
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [deactivatingPda, setDeactivatingPda] = useState<string | null>(null);
+  const [deactivateError, setDeactivateError] = useState<string | null>(null);
 
   const [pdaPubkey] = getPlatformConfigPda();
 
@@ -156,6 +158,9 @@ export default function AdminPage() {
 
   const handleDeactivate = async (row: IssuerRow) => {
     if (!publicKey) return;
+    const key = row.pda.toBase58();
+    setDeactivatingPda(key);
+    setDeactivateError(null);
     try {
       const ix = buildDeactivateIssuerIx(publicKey, row.issuer.authority);
       const tx = new Transaction().add(ix);
@@ -163,7 +168,9 @@ export default function AdminPage() {
       await connection.confirmTransaction(signature, "confirmed");
       loadIssuers();
     } catch (e) {
-      alert(e instanceof Error ? e.message : String(e));
+      setDeactivateError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDeactivatingPda(null);
     }
   };
 
@@ -378,12 +385,16 @@ export default function AdminPage() {
               </div>
               <button
                 onClick={() => handleDeactivate(row)}
-                className="rounded-lg bg-red-900 hover:bg-red-800 px-4 py-2 text-sm font-medium text-red-300"
+                disabled={deactivatingPda === row.pda.toBase58()}
+                className="rounded-lg bg-red-900 hover:bg-red-800 disabled:opacity-50 px-4 py-2 text-sm font-medium text-red-300"
               >
-                Deactivate
+                {deactivatingPda === row.pda.toBase58() ? "Deactivating…" : "Deactivate"}
               </button>
             </div>
           ))}
+          {deactivateError && (
+            <p className="text-sm text-red-400 mt-2">{deactivateError}</p>
+          )}
         </section>
       )}
 
