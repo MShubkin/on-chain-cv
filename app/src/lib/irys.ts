@@ -3,6 +3,8 @@
 // никогда не протухает, что требует программа при verify_issuer.
 // На devnet Irys принимает devnet SOL без реальной оплаты.
 
+import { Connection } from "@solana/web3.js";
+
 // Метаданные коллекции в формате Metaplex JSON standard.
 // Загружаются на Arweave и передаются как collection_uri при вызове verify_issuer.
 export interface CollectionMetadata {
@@ -44,15 +46,33 @@ export async function createIrysUploader(
     .withProvider(walletAdapter)
     .withRpc(rpcUrl);
 
+  const connection = new Connection(rpcUrl, "confirmed");
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  // Ждёт пока Solana подтвердит транзакцию (до 90 секунд).
+  async function waitForConfirmation(signature: string): Promise<void> {
+    for (let i = 0; i < 30; i++) {
+      await sleep(3000);
+      const { value } = await connection.getSignatureStatuses([signature]);
+      const status = value[0];
+      if (
+        status &&
+        !status.err &&
+        (status.confirmationStatus === "confirmed" ||
+          status.confirmationStatus === "finalized")
+      ) {
+        return;
+      }
+    }
+  }
 
   // Пополняет баланс на ноде Irys если его не хватает для загрузки byteCount байт.
   // fund() подписывает SOL-транзакцию через кошелёк — пользователь увидит approve.
   //
   // На devnet бандлер Irys иногда не находит транзакцию сразу после отправки —
   // он возвращает 400 "Confirmed tx not found". SOL при этом уже списан, поэтому
-  // повторно отправлять транзакцию нельзя. Вместо этого ждём подтверждения и
-  // вызываем submitFundTransaction с тем же tx ID из сообщения об ошибке.
+  // повторно отправлять транзакцию нельзя. Вместо этого ждём on-chain подтверждения
+  // через getSignatureStatuses и вызываем submitFundTransaction с тем же tx ID.
   async function ensureFunded(byteCount: number): Promise<void> {
     const price = await uploader.getPrice(byteCount);
     const balance = await uploader.getBalance();
@@ -69,9 +89,10 @@ export async function createIrysUploader(
       if (!match) throw e;
 
       const txId = match[1];
-      // Повторяем регистрацию без повторной отправки SOL: ждём пока devnet подтвердит
+      // Ждём реального on-chain подтверждения прежде чем уведомлять бандлер
+      await waitForConfirmation(txId);
       for (let attempt = 1; attempt <= 5; attempt++) {
-        await sleep(6000 * attempt); // 6s, 12s, 18s, 24s, 30s
+        await sleep(3000 * attempt);
         try {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await (uploader as any).submitFundTransaction(txId);
