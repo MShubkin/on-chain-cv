@@ -31,11 +31,19 @@ export default function RegisterIssuerPage() {
     setLoading(true);
     setError(null);
     try {
+      const [issuerPda] = getIssuerRegistryPda(publicKey);
+      const existing = await connection.getAccountInfo(issuerPda);
+      if (existing) {
+        setError(
+          "An issuer account already exists for this wallet. " +
+          "Deactivated accounts cannot be re-registered — contact the platform admin."
+        );
+        return;
+      }
       const ix = buildRegisterIssuerIx(publicKey, name, website);
       const tx = new Transaction().add(ix);
       const signature = await sendTransaction(tx, connection);
       await connection.confirmTransaction(signature, "confirmed");
-      const [issuerPda] = getIssuerRegistryPda(publicKey);
       router.push(`/issuer/${issuerPda.toBase58()}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
