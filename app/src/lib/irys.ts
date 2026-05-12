@@ -42,9 +42,10 @@ export async function createIrysUploader(
       ? "https://api.devnet.solana.com"
       : "https://api.mainnet-beta.solana.com";
 
-  const uploader = await WebUploader(WebSolana)
+  const builder = WebUploader(WebSolana)
     .withProvider(walletAdapter)
     .withRpc(rpcUrl);
+  const uploader = await (cluster === "devnet" ? builder.devnet() : builder);
 
   const connection = new Connection(rpcUrl, "confirmed");
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
