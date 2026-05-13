@@ -6,9 +6,9 @@ A recruiter asks a candidate whether they worked at Company X. The candidate sha
 
 ## Live Demo
 
-**[onchaincv.app/profile/\<pubkey\>](https://on-chain-cv-delta.vercel.app/profile/Fkqo4vWFpdzKM8qmStW8FPMhCCACnW9Zve7LpcLKyr8N)** — candidate portfolio, open in incognito.
+**[onchaincv.app/profile/Fkqo4vWFpdzKM8qmStW8FPMhCCACnW9Zve7LpcLKyr8N](https://on-chain-cv-delta.vercel.app/profile/Fkqo4vWFpdzKM8qmStW8FPMhCCACnW9Zve7LpcLKyr8N)** — candidate portfolio, open in incognito.
 
-**[onchaincv.app/credential/\<pda\>](https://on-chain-cv-delta.vercel.app/credential/EGHvfB7AGN9MJ5rPotC1HqFTp1vRAVzBGBbEZGjkX9wv)** — single credential with verify badge and QR code.
+**[onchaincv.app/credential/EGHvfB7AGN9MJ5rPotC1HqFTp1vRAVzBGBbEZGjkX9wv](https://on-chain-cv-delta.vercel.app/credential/EGHvfB7AGN9MJ5rPotC1HqFTp1vRAVzBGBbEZGjkX9wv)** — single credential with verify badge and QR code.
 
 | | |
 |---|---|
