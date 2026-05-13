@@ -42,7 +42,6 @@ pub fn initialize_platform(ctx: Context<InitializePlatform>) -> Result<()> {
     Ok(())
 }
 
-// ── transfer_platform_authority ──────────────────────────────────────────────
 
 /// Аккаунты для передачи прав на платформу другому кошельку.
 ///
@@ -72,7 +71,6 @@ pub fn transfer_platform_authority(ctx: Context<TransferPlatformAuthority>) -> R
     Ok(())
 }
 
-// ── register_issuer ──────────────────────────────────────────────────────────
 
 /// Аккаунты для регистрации нового эмитента.
 ///
@@ -121,7 +119,6 @@ pub fn register_issuer(
     Ok(())
 }
 
-// ── verify_issuer ─────────────────────────────────────────────────────────────
 
 /// Аккаунты для верификации эмитента администратором платформы.
 ///
@@ -221,8 +218,6 @@ pub fn verify_issuer(ctx: Context<VerifyIssuer>, collection_uri: String) -> Resu
     Ok(())
 }
 
-// ── deactivate_issuer ─────────────────────────────────────────────────────────
-
 /// Аккаунты для деактивации эмитента.
 ///
 /// Деактивация не удаляет аккаунт и не затрагивает коллекцию или уже выданные credentials.
@@ -257,7 +252,6 @@ pub fn deactivate_issuer(ctx: Context<DeactivateIssuer>) -> Result<()> {
     Ok(())
 }
 
-// ── update_issuer_metadata ────────────────────────────────────────────────────
 
 /// Аккаунты для обновления метаданных эмитента.
 ///
@@ -346,7 +340,6 @@ pub fn update_issuer_metadata(
     Ok(())
 }
 
-// ── issue_credential ──────────────────────────────────────────────────────────
 
 /// Аккаунты для выдачи credential.
 ///
@@ -612,7 +605,6 @@ pub fn revoke_credential(ctx: Context<RevokeCredential>) -> Result<()> {
     Ok(())
 }
 
-// ── endorse_credential ────────────────────────────────────────────────────────
 
 /// Аккаунты для эндорсирования credential.
 ///
@@ -682,7 +674,6 @@ pub fn endorse_credential(ctx: Context<EndorseCredential>) -> Result<()> {
     Ok(())
 }
 
-// ── close_endorsement ─────────────────────────────────────────────────────────
 
 /// Аккаунты для закрытия эндорсмента и возврата заблокированной ренты.
 ///
@@ -749,7 +740,6 @@ pub fn close_endorsement(ctx: Context<CloseEndorsement>) -> Result<()> {
     Ok(())
 }
 
-// ── close_credential ─────────────────────────────────────────────────────────
 
 /// Закрывает PDA отозванного Credential и возвращает ренту эмитенту.
 ///

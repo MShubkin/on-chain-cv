@@ -49,7 +49,6 @@ export default function AdminPage() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [collectionDescription, setCollectionDescription] = useState("");
   // Если заполнено — Irys не используется. Удобно на localnet: вписать ar://test
-  const [manualCollectionUri, setManualCollectionUri] = useState("");
 
   // ── transfer authority section state ─────────────────────────────────────
   const [newAuthorityInput, setNewAuthorityInput] = useState("");
@@ -98,35 +97,24 @@ export default function AdminPage() {
     }
   };
 
-  // handleVerify — два варианта получения collectionUri:
-  // A) manualCollectionUri заполнен → использует его напрямую, Irys не нужен (localnet/тесты)
-  // B) поле пустое → загружает логотип + JSON на Irys devnet и получает ar:// URI
-  // После этого отправляет транзакцию verify_issuer с collectionKeypair как доп. подписантом.
   const handleVerify = async (row: IssuerRow) => {
     if (!publicKey || !wallet.wallet) return;
     setVerifyLoading(true);
     setVerifyError(null);
     try {
-      let collectionUri: string;
+      const irys = await createIrysUploader(wallet.wallet.adapter, "devnet");
 
-      if (manualCollectionUri.trim()) {
-        // Прямой ввод URI — Irys пропускается полностью
-        collectionUri = manualCollectionUri.trim();
-      } else {
-        const irys = await createIrysUploader(wallet.wallet.adapter, "devnet");
+      let imageUri = "ar://placeholder";
+      if (logoFile) imageUri = await irys.uploadFile(logoFile);
 
-        let imageUri = "ar://placeholder";
-        if (logoFile) imageUri = await irys.uploadFile(logoFile);
-
-        const metadata = buildCollectionMetadataJson({
-          issuerName: row.issuer.name,
-          description:
-            collectionDescription || `${row.issuer.name} verified credentials`,
-          imageUri,
-          externalUrl: row.issuer.website,
-        });
-        collectionUri = await irys.uploadJson(metadata);
-      }
+      const metadata = buildCollectionMetadataJson({
+        issuerName: row.issuer.name,
+        description:
+          collectionDescription || `${row.issuer.name} verified credentials`,
+        imageUri,
+        externalUrl: row.issuer.website,
+      });
+      const collectionUri = await irys.uploadJson(metadata);
 
       // Keypair генерируется на лету — он нужен только чтобы подписать эту одну транзакцию.
       // После создания коллекции MPL-Core владеет аккаунтом по этому pubkey.
@@ -147,7 +135,6 @@ export default function AdminPage() {
       setVerifyingPda(null);
       setLogoFile(null);
       setCollectionDescription("");
-      setManualCollectionUri("");
       loadIssuers();
     } catch (e) {
       setVerifyError(e instanceof Error ? e.message : String(e));
@@ -301,39 +288,21 @@ export default function AdminPage() {
 
               {verifyingPda === row.pda.toBase58() && (
                 <div className="flex flex-col gap-3 pt-3 border-t border-gray-700">
-                  {/* Ручной ввод URI — обходит Irys, нужен на localnet */}
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs text-gray-500 uppercase tracking-wide">
-                      Collection URI — localnet / testing
-                    </label>
-                    <input
-                      value={manualCollectionUri}
-                      onChange={(e) => setManualCollectionUri(e.target.value)}
-                      placeholder="ar://... — вписать чтобы пропустить Irys"
-                      className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-green-600 font-mono"
-                    />
-                  </div>
-
-                  {/* Irys upload — только если URI не введён вручную */}
-                  {!manualCollectionUri.trim() && (
-                    <>
-                      <p className="text-xs text-gray-400">
-                        Или загрузить логотип и описание на Irys (devnet SOL):
-                      </p>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
-                        className="text-sm text-gray-400"
-                      />
-                      <input
-                        value={collectionDescription}
-                        onChange={(e) => setCollectionDescription(e.target.value)}
-                        placeholder={`Verified credentials issued by ${row.issuer.name}`}
-                        className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-green-600"
-                      />
-                    </>
-                  )}
+                  <p className="text-xs text-gray-400">
+                    Загрузить логотип и описание на Irys (devnet SOL):
+                  </p>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
+                    className="text-sm text-gray-400"
+                  />
+                  <input
+                    value={collectionDescription}
+                    onChange={(e) => setCollectionDescription(e.target.value)}
+                    placeholder={`Verified credentials issued by ${row.issuer.name}`}
+                    className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-green-600"
+                  />
 
                   <div className="flex gap-3">
                     <button
@@ -341,9 +310,7 @@ export default function AdminPage() {
                       disabled={verifyLoading || !publicKey}
                       className="rounded-lg bg-green-700 hover:bg-green-600 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed px-4 py-2 text-sm font-medium"
                     >
-                      {verifyLoading
-                        ? manualCollectionUri.trim() ? "Signing…" : "Uploading + signing…"
-                        : "Confirm Verify"}
+                      {verifyLoading ? "Uploading + signing…" : "Confirm Verify"}
                     </button>
                     <button
                       onClick={() => {
