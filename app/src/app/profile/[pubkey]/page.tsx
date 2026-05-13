@@ -294,6 +294,9 @@ export default function ProfilePage() {
                           >
                             {credential.skill}
                           </span>
+                          <span className="rounded-full border border-gray-700 bg-gray-800 px-2 py-0.5 text-gray-400">
+                            Level {credential.level}
+                          </span>
                           <span>{cardPeriod}</span>
                           {credential.endorsementCount > 0 && (
                             <span>
