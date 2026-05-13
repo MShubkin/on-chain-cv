@@ -283,7 +283,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (issuerLoading) {
+  if (issuerLoading || (!issuer && !issuerError)) {
     return <p className="text-sm text-gray-500 py-24 text-center">Loading…</p>;
   }
 
