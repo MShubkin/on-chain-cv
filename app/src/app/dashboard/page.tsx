@@ -49,6 +49,7 @@ export default function DashboardPage() {
 
   const [issuer, setIssuer] = useState<IssuerRegistryAccount | null>(null);
   const [issuerPda, setIssuerPda] = useState<PublicKey | null>(null);
+  const [issuerLoading, setIssuerLoading] = useState(false);
   const [issuerError, setIssuerError] = useState<string | null>(null);
 
   // Form state
@@ -78,11 +79,13 @@ export default function DashboardPage() {
     if (!publicKey) return;
     const [pda] = getIssuerRegistryPda(publicKey);
     setIssuerPda(pda);
+    setIssuerLoading(true);
+    setIssuerError(null);
     connection
       .getAccountInfo(pda)
       .then(async (info) => {
         if (!info) {
-          setIssuerError("No issuer registry found. Register at /issuer/register first.");
+          setIssuerError("not_registered");
           return;
         }
         const reg = deserializeIssuerRegistry(Buffer.from(info.data));
@@ -100,7 +103,8 @@ export default function DashboardPage() {
           }
         }
       })
-      .catch((e) => setIssuerError(e.message));
+      .catch((e) => setIssuerError(e.message))
+      .finally(() => setIssuerLoading(false));
   }, [publicKey, connection]);
 
   const loadIssuedCredentials = useCallback(() => {
@@ -270,6 +274,56 @@ export default function DashboardPage() {
 
   const notVerified = issuer && (!issuer.isVerified || issuer.deactivatedAt !== null);
 
+  if (!publicKey) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-24">
+        <p className="text-gray-400">Connect your wallet to access the issuer dashboard.</p>
+        <WalletMultiButton className="!bg-purple-700 hover:!bg-purple-600 !rounded-lg !text-sm !h-10" />
+      </div>
+    );
+  }
+
+  if (issuerLoading) {
+    return <p className="text-sm text-gray-500 py-24 text-center">Loading…</p>;
+  }
+
+  if (issuerError === "not_registered") {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-24">
+        <p className="text-xl font-bold text-gray-300">Not registered as an issuer</p>
+        <p className="text-sm text-gray-500">
+          Register your organisation first to issue credentials.
+        </p>
+        <a
+          href="/issuer/register"
+          className="mt-2 rounded-lg bg-purple-700 hover:bg-purple-600 px-5 py-2 text-sm font-medium text-white"
+        >
+          Register as Issuer
+        </a>
+      </div>
+    );
+  }
+
+  if (issuerError) {
+    return <p className="text-sm text-red-400 py-24 text-center">{issuerError}</p>;
+  }
+
+  if (notVerified) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-24">
+        <p className="text-xl font-bold text-gray-300">
+          {issuer!.deactivatedAt !== null ? "Account deactivated" : "Pending verification"}
+        </p>
+        <p className="text-sm text-gray-500">
+          {issuer!.deactivatedAt !== null
+            ? "Your issuer account has been deactivated. Contact the platform admin."
+            : "Your issuer account is awaiting admin approval before you can issue credentials."}
+        </p>
+        <p className="text-xs font-mono text-gray-600">{issuer!.name}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-8">
       <div>
@@ -279,31 +333,17 @@ export default function DashboardPage() {
         <h1 className="text-2xl font-bold">Issue Credential</h1>
       </div>
 
-      <WalletMultiButton className="!bg-purple-700 hover:!bg-purple-600 !rounded-lg !text-sm !h-10 self-start" />
-
-      {issuerError && (
-        <p className="text-sm text-red-400">{issuerError}</p>
-      )}
-
-      {issuer && (
-        <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 flex items-center gap-4">
-          <div className="flex flex-col gap-0.5 flex-1">
-            <p className="font-medium">{issuer.name}</p>
-            <p className="text-xs text-gray-500">
-              {issuer.credentialsIssued.toString()} credentials issued
-            </p>
-          </div>
-          {notVerified ? (
-            <span className="text-xs text-red-400 bg-red-950 border border-red-800 rounded-full px-2 py-0.5">
-              {issuer.deactivatedAt !== null ? "Deactivated" : "Not verified"}
-            </span>
-          ) : (
-            <span className="text-xs text-green-400 bg-green-950 border border-green-800 rounded-full px-2 py-0.5">
-              ✅ Verified
-            </span>
-          )}
+      <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 flex items-center gap-4">
+        <div className="flex flex-col gap-0.5 flex-1">
+          <p className="font-medium">{issuer!.name}</p>
+          <p className="text-xs text-gray-500">
+            {issuer!.credentialsIssued.toString()} credentials issued
+          </p>
         </div>
-      )}
+        <span className="text-xs text-green-400 bg-green-950 border border-green-800 rounded-full px-2 py-0.5">
+          ✅ Verified
+        </span>
+      </div>
 
       {issuer && !notVerified && (
         <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 flex flex-col gap-5">
