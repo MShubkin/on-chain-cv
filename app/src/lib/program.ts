@@ -278,6 +278,11 @@ function readOption<T>(
   return read(buf, offset + 1);
 }
 
+export function deserializePlatformConfig(data: Buffer): { authority: PublicKey; bump: number } {
+  const [authority] = readPubkey(data, 8); // skip 8-byte discriminator
+  return { authority, bump: data[40] };
+}
+
 // Ручной Borsh-декодер — точно повторяет on-chain layout struct IssuerRegistry (state.rs).
 // Порядок чтения должен совпадать с порядком полей в Rust-структуре.
 // Если добавить поле в state.rs, этот декодер нужно обновить вручную.

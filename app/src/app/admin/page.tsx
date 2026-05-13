@@ -12,6 +12,7 @@ import {
   fetchAllIssuers,
   IssuerRegistryAccount,
   getPlatformConfigPda,
+  deserializePlatformConfig,
   explorerUrl,
 } from "@/lib/program";
 import { PublicKey } from "@solana/web3.js";
@@ -38,6 +39,7 @@ export default function AdminPage() {
 
   // ── initialize section state ──────────────────────────────────────────────
   const [chainStatus, setChainStatus] = useState<ChainStatus>("loading");
+  const [platformAuthority, setPlatformAuthority] = useState<string | null>(null);
   const [justInitialized, setJustInitialized] = useState(false);
   const [initLoading, setInitLoading] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
@@ -64,7 +66,13 @@ export default function AdminPage() {
 
   useEffect(() => {
     connection.getAccountInfo(pdaPubkey).then((info) => {
-      setChainStatus(info ? "initialized" : "not_initialized");
+      if (!info) {
+        setChainStatus("not_initialized");
+        return;
+      }
+      setChainStatus("initialized");
+      const { authority } = deserializePlatformConfig(Buffer.from(info.data));
+      setPlatformAuthority(authority.toBase58());
     });
   }, [connection, pdaPubkey]);
 
@@ -198,6 +206,37 @@ export default function AdminPage() {
   const verifiedIssuers = issuers.filter(
     (r) => r.issuer.isVerified && r.issuer.deactivatedAt === null
   );
+
+  const isAdmin =
+    chainStatus === "not_initialized" ||
+    (chainStatus === "initialized" && !!publicKey && platformAuthority === publicKey.toBase58());
+
+  if (!publicKey) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-24">
+        <p className="text-gray-400">Connect your wallet to access admin panel.</p>
+        <WalletMultiButton />
+      </div>
+    );
+  }
+
+  if (chainStatus === "loading") {
+    return <p className="text-sm text-gray-500 py-24 text-center">Loading…</p>;
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-24">
+        <p className="text-2xl font-bold text-red-400">Access denied</p>
+        <p className="text-sm text-gray-500">
+          Connected wallet is not the platform authority.
+        </p>
+        <p className="text-xs font-mono text-gray-600 break-all max-w-xs text-center">
+          {publicKey.toBase58()}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-10">
