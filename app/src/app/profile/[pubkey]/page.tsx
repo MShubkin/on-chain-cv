@@ -40,8 +40,6 @@ export default function ProfilePage() {
 
   // Progressive: issuer logos keyed by issuer PDA string
   const [logoUrls, setLogoUrls] = useState<Map<string, string | null>>(new Map());
-  // Progressive: aggregated skills from Arweave metadata
-  const [skills, setSkills] = useState<string[]>([]);
   // Progressive: per-credential Arweave metadata keyed by credential PDA string
   const [credMeta, setCredMeta] = useState<Map<string, CredentialMetadata | null>>(new Map());
 
@@ -108,13 +106,6 @@ export default function ProfilePage() {
               if (!json) return;
               const meta = json as CredentialMetadata;
               setCredMeta((prev) => new Map(prev).set(key, meta));
-              if (!credential.revoked && !isExpired(credential.expiresAt)) {
-                setSkills((prev) => {
-                  const updated = new Set(prev);
-                  (meta.skills ?? []).forEach((s) => updated.add(s));
-                  return [...updated].sort();
-                });
-              }
             })
             .catch(() => {});
         });
@@ -153,24 +144,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Skill cloud — appears when Arweave metadata loads */}
-      {skills.length > 0 && (
-        <div>
-          <p className="text-xs text-gray-500 uppercase tracking-widest mb-3">Skills</p>
-          <div className="flex flex-wrap gap-2">
-            {skills.map((skill) => (
-              <span
-                key={skill}
-                className="rounded-full bg-gray-800 border border-gray-700 px-3 py-1 text-sm text-gray-300"
-              >
-                {skill}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {loading && <p className="text-sm text-gray-500">Loading credentials…</p>}
+      {loading &&<p className="text-sm text-gray-500">Loading credentials…</p>}
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       {!loading && !error && (
@@ -305,6 +279,18 @@ export default function ProfilePage() {
                             </span>
                           )}
                         </div>
+                        {meta?.skills && meta.skills.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {meta.skills.map((s) => (
+                              <span
+                                key={s}
+                                className="rounded-full bg-gray-800 border border-gray-700 px-2 py-0.5 text-xs text-gray-400"
+                              >
+                                {s}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </a>
