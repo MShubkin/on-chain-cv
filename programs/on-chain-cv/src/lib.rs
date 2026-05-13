@@ -18,20 +18,20 @@ pub use state::*;
 
 declare_id!("4YDMjUyfuj4efEbyceNknSjwuFzxR1yZJSi6fzKsCH52");
 
-/// Точка входа для всех инструкций программы.
+/// Точка входа для всех инструкций программы
 ///
-/// Anchor роутит вызовы по 8-байтовому дискриминатору в начале instruction data.
+/// Anchor роутит вызовы по 8-байтовому дискриминатору в начале instruction data
 /// Дискриминатор = sha256("global:<имя_инструкции>")[0..8].
 #[program]
 pub mod on_chain_cv {
     use super::*;
 
-    /// Создаёт `PlatformConfig` PDA. Разовая операция при первом деплое.
+    /// Создаёт `PlatformConfig` PDA. Разовая операция при первом деплое
     pub fn initialize_platform(ctx: Context<InitializePlatform>) -> Result<()> {
         instructions::initialize_platform(ctx)
     }
 
-    /// Передаёт права администратора платформы другому кошельку.
+    /// Передаёт права администратора платформы другому кошельку
     pub fn transfer_platform_authority(ctx: Context<TransferPlatformAuthority>) -> Result<()> {
         instructions::transfer_platform_authority(ctx)
     }
@@ -42,19 +42,19 @@ pub mod on_chain_cv {
         instructions::register_issuer(ctx, name, website)
     }
 
-    /// Верифицирует эмитента и (при первом вызове) создаёт MPL-Core коллекцию.
-    /// `collection_uri` должен указывать на Arweave — другие хранилища отклоняются.
+    /// Верифицирует эмитента и (при первом вызове) создаёт MPL-Core коллекцию
+    /// `collection_uri` должен указывать на Arweave — другие хранилища отклоняются
     pub fn verify_issuer(ctx: Context<VerifyIssuer>, collection_uri: String) -> Result<()> {
         instructions::verify_issuer(ctx, collection_uri)
     }
 
-    /// Деактивирует эмитента: новые credentials выдавать нельзя, старые не затрагиваются.
+    /// Деактивирует эмитента: новые credentials выдавать нельзя, старые не затрагиваются
     pub fn deactivate_issuer(ctx: Context<DeactivateIssuer>) -> Result<()> {
         instructions::deactivate_issuer(ctx)
     }
 
     /// Обновляет `name` и `website` эмитента. При смене имени сбрасывает верификацию
-    /// и синхронизирует название MPL-Core коллекции через CPI.
+    /// и синхронизирует название MPL-Core коллекции через CPI
     pub fn update_issuer_metadata(
         ctx: Context<UpdateIssuerMetadata>,
         new_name: String,
@@ -64,7 +64,7 @@ pub mod on_chain_cv {
     }
 
     /// Выдаёт credential держателю: создаёт `Credential` PDA и soulbound MPL-Core Asset
-    /// в коллекции эмитента. Требует верифицированного и активного эмитента.
+    /// в коллекции эмитента. Требует верифицированного и активного эмитента
     pub fn issue_credential(
         ctx: Context<IssueCredential>,
         skill: SkillCategory,
@@ -76,26 +76,26 @@ pub mod on_chain_cv {
         instructions::issue_credential(ctx, skill, level, name, expires_at, metadata_uri)
     }
 
-    /// Отзывает credential: сжигает soulbound MPL-Core Asset и выставляет `revoked = true`.
-    /// Asset исчезает из кошелька держателя сразу — BurnV1 CPI в той же транзакции.
+    /// Отзывает credential: сжигает soulbound MPL-Core Asset и выставляет `revoked = true`
+    /// Asset исчезает из кошелька держателя сразу — BurnV1 CPI в той же транзакции
     pub fn revoke_credential(ctx: Context<RevokeCredential>) -> Result<()> {
         instructions::revoke_credential(ctx)
     }
 
     /// Записывает эндорсмент. Рента эндорсера (~0.002 SOL) заблокирована на 30 дней —
-    /// это цена атаки, делающей Sybil-эндорсинг дорогим. Само-эндорсмент и дубли отклоняются.
+    /// это цена атаки, делающей Sybil-эндорсинг дорогим. Само-эндорсмент и дубли отклоняются
     pub fn endorse_credential(ctx: Context<EndorseCredential>) -> Result<()> {
         instructions::endorse_credential(ctx)
     }
 
     /// Закрывает Endorsement PDA и возвращает ренту эндорсеру.
-    /// Отклоняется, если с момента эндорсмента прошло меньше 30 дней.
+    /// Отклоняется, если с момента эндорсмента прошло меньше 30 дней
     pub fn close_endorsement(ctx: Context<CloseEndorsement>) -> Result<()> {
         instructions::close_endorsement(ctx)
     }
 
     /// Closes a revoked Credential PDA and returns rent to the issuer.
-    /// Fails if the credential is not revoked or has active endorsements.
+    /// Fails if the credential is not revoked or has active endorsements
     pub fn close_credential(ctx: Context<CloseCredential>) -> Result<()> {
         instructions::close_credential(ctx)
     }

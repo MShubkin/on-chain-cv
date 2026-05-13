@@ -25,6 +25,22 @@ Issuers (companies, universities) register on the platform and, after admin appr
 
 The `program_signer` PDA (`seeds: [b"program_signer"]`) is the `update_authority` for all MPL-Core Collections and Assets. Nobody outside the program can alter asset metadata or call CPI burns.
 
+## Frontend pages
+
+All pages run at `https://on-chain-cv-delta.vercel.app` in dev mode.
+
+| Route | Who uses it | What it does |
+|---|---|---|
+| [`/`](https://on-chain-cv-delta.vercel.app) | anyone | Landing: explains what the platform does, links to admin setup |
+| [`/admin`](https://on-chain-cv-delta.vercel.app/admin) | platform admin | Initialize the platform, verify/deactivate issuers, upload collection metadata to Arweave, transfer admin key to a new wallet |
+| [`/issuer/register`](https://on-chain-cv-delta.vercel.app/issuer/register) | issuer | Submit name and website; creates the `IssuerRegistry` PDA, status becomes "pending verification" |
+| [`/issuers`](https://on-chain-cv-delta.vercel.app/issuers) | anyone | Browse all registered issuers; shows verification status and credentials issued count |
+| [`/issuer/[pda]`](https://on-chain-cv-delta.vercel.app/issuer/ABC123) | anyone | Public issuer profile: name, website, verification timestamp, link to their MPL-Core Collection |
+| [`/dashboard`](https://on-chain-cv-delta.vercel.app/dashboard) | issuer | Issue credentials (uploads metadata to Arweave/Irys, mints soulbound NFT), revoke credentials (burns the NFT), close revoked credentials to reclaim rent |
+| [`/profile/[pubkey]`](https://on-chain-cv-delta.vercel.app/profile/ABC123) | anyone | Candidate's public portfolio: all credentials issued to that wallet, color-coded by category (Work / Education / Certificate / Achievement), expiry and revocation status |
+| [`/credential/[pda]`](https://on-chain-cv-delta.vercel.app/credential/ABC123) | anyone | Single credential: verify badge (valid / revoked / expired / issuer unverified / tampered), endorsement list, QR code for printing in a physical CV, Endorse button for connected wallets |
+| [`/my-endorsements`](https://on-chain-cv-delta.vercel.app/my-endorsements) | endorser | List of your active endorsements, countdown to when each 30-day lockup ends, Close button to reclaim locked SOL |
+
 ## On-chain accounts
 
 ### PlatformConfig
@@ -209,22 +225,6 @@ Anyone can endorse a credential, except the recipient. Endorsing locks about 0.0
 
 Closing a revoked credential requires `endorsement_count == 0`. Endorsers close their PDAs first, then the issuer closes the credential. This prevents dangling references in a chain that can't garbage-collect on its own.
 
-## Frontend pages
-
-All pages run at `http://localhost:3000` in dev mode.
-
-| Route | Who uses it | What it does |
-|---|---|---|
-| [`/`](http://localhost:3000) | anyone | Landing: explains what the platform does, links to admin setup |
-| [`/admin`](http://localhost:3000/admin) | platform admin | Initialize the platform, verify/deactivate issuers, upload collection metadata to Arweave, transfer admin key to a new wallet |
-| [`/issuer/register`](http://localhost:3000/issuer/register) | issuer | Submit name and website; creates the `IssuerRegistry` PDA, status becomes "pending verification" |
-| [`/issuers`](http://localhost:3000/issuers) | anyone | Browse all registered issuers; shows verification status and credentials issued count |
-| [`/issuer/[pda]`](http://localhost:3000/issuer/ABC123) | anyone | Public issuer profile: name, website, verification timestamp, link to their MPL-Core Collection |
-| [`/dashboard`](http://localhost:3000/dashboard) | issuer | Issue credentials (uploads metadata to Arweave/Irys, mints soulbound NFT), revoke credentials (burns the NFT), close revoked credentials to reclaim rent |
-| [`/profile/[pubkey]`](http://localhost:3000/profile/ABC123) | anyone | Candidate's public portfolio: all credentials issued to that wallet, color-coded by category (Work / Education / Certificate / Achievement), expiry and revocation status |
-| [`/credential/[pda]`](http://localhost:3000/credential/ABC123) | anyone | Single credential: verify badge (valid / revoked / expired / issuer unverified / tampered), endorsement list, QR code for printing in a physical CV, Endorse button for connected wallets |
-| [`/my-endorsements`](http://localhost:3000/my-endorsements) | endorser | List of your active endorsements, countdown to when each 30-day lockup ends, Close button to reclaim locked SOL |
-
 ## Getting started
 
 Prerequisites: Rust + Anchor CLI, Node.js 18+, Yarn, Solana CLI.
@@ -240,7 +240,7 @@ cargo test
 cd app && npm run dev
 ```
 
-Point Phantom at localnet (`http://localhost:8899`) and open `http://localhost:3000/admin` to initialize the platform.
+Point Phantom at localnet (`http://localhost:8899`) and open `https://on-chain-cv-delta.vercel.app/admin` to initialize the platform.
 
 ### Devnet (live)
 
