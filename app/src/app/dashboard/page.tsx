@@ -22,7 +22,7 @@ import {
   arToHttp,
   PROGRAM_ID,
 } from "@/lib/program";
-import { createIrysUploader, buildCredentialMetadataJson } from "@/lib/irys";
+import { createIrysUploader, buildCredentialMetadataJson, SkillEntry } from "@/lib/irys";
 
 const WalletMultiButton = dynamic(
   () =>
@@ -56,7 +56,7 @@ export default function DashboardPage() {
   const [skill, setSkill] = useState<SkillCategory>("Work");
   const [level, setLevel] = useState("4");
   const [credentialName, setCredentialName] = useState("");
-  const [skillsList, setSkillsList] = useState("");
+  const [skillEntries, setSkillEntries] = useState<{ name: string; url: string }[]>([{ name: "", url: "" }]);
   const [periodFrom, setPeriodFrom] = useState("");
   const [periodTo, setPeriodTo] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
@@ -175,10 +175,11 @@ export default function DashboardPage() {
         recipientPubkey: recipientPubkey.toBase58(),
         periodFrom: periodFrom || null,
         periodTo: periodTo || null,
-        skills: skillsList
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean),
+        skills: skillEntries
+          .filter((e) => e.name.trim())
+          .map((e): SkillEntry =>
+            e.url.trim() ? { name: e.name.trim(), url: e.url.trim() } : { name: e.name.trim() }
+          ),
         level: lvl,
         expiresAt: expiresAtSec !== null ? Number(expiresAtSec) : null,
         credentialPda: credPda.toBase58(),
@@ -359,16 +360,54 @@ export default function DashboardPage() {
               />
             </div>
 
-            <div className="flex flex-col gap-1 sm:col-span-2">
+            <div className="flex flex-col gap-2 sm:col-span-2">
               <label className="text-xs text-gray-500 uppercase tracking-wide">
-                Skills (comma-separated)
+                Skills
               </label>
-              <input
-                value={skillsList}
-                onChange={(e) => setSkillsList(e.target.value)}
-                placeholder="Rust, Solana, Anchor"
-                className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500"
-              />
+              {skillEntries.map((entry, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <input
+                    value={entry.name}
+                    onChange={(e) =>
+                      setSkillEntries((prev) =>
+                        prev.map((s, idx) => idx === i ? { ...s, name: e.target.value } : s)
+                      )
+                    }
+                    placeholder="e.g. Rust"
+                    className="flex-1 rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500"
+                  />
+                  <input
+                    value={entry.url}
+                    onChange={(e) =>
+                      setSkillEntries((prev) =>
+                        prev.map((s, idx) => idx === i ? { ...s, url: e.target.value } : s)
+                      )
+                    }
+                    placeholder="Certificate URL (optional)"
+                    className="flex-1 rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500"
+                  />
+                  {skillEntries.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSkillEntries((prev) => prev.filter((_, idx) => idx !== i))
+                      }
+                      className="text-gray-500 hover:text-red-400 text-lg leading-none px-1"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() =>
+                  setSkillEntries((prev) => [...prev, { name: "", url: "" }])
+                }
+                className="self-start text-xs text-purple-400 hover:text-purple-300"
+              >
+                + Add skill
+              </button>
             </div>
 
             <div className="flex flex-col gap-1">

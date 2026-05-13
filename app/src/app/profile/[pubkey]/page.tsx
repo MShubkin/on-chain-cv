@@ -14,7 +14,11 @@ import {
   isExpired,
   arToHttp,
 } from "@/lib/program";
-import { CredentialMetadata } from "@/lib/irys";
+import { CredentialMetadata, SkillEntry } from "@/lib/irys";
+
+function normalizeSkill(s: SkillEntry | string): SkillEntry {
+  return typeof s === "string" ? { name: s } : s;
+}
 
 const SKILL_COLOR: Record<SkillCategory, string> = {
   Work: "bg-blue-950 border-blue-800 text-blue-300",
@@ -281,14 +285,28 @@ export default function ProfilePage() {
                         </div>
                         {meta?.skills && meta.skills.length > 0 && (
                           <div className="flex flex-wrap gap-1.5 mt-2">
-                            {meta.skills.map((s) => (
-                              <span
-                                key={s}
-                                className="rounded-full bg-gray-800 border border-gray-700 px-2 py-0.5 text-xs text-gray-400"
-                              >
-                                {s}
-                              </span>
-                            ))}
+                            {(meta.skills as (SkillEntry | string)[]).map((raw) => {
+                              const s = normalizeSkill(raw);
+                              return s.url ? (
+                                <a
+                                  key={s.name}
+                                  href={s.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="rounded-full bg-gray-800 border border-purple-700 px-2 py-0.5 text-xs text-purple-400 hover:text-purple-300 hover:border-purple-500 transition-colors"
+                                >
+                                  {s.name} ↗
+                                </a>
+                              ) : (
+                                <span
+                                  key={s.name}
+                                  className="rounded-full bg-gray-800 border border-gray-700 px-2 py-0.5 text-xs text-gray-400"
+                                >
+                                  {s.name}
+                                </span>
+                              );
+                            })}
                           </div>
                         )}
                       </div>

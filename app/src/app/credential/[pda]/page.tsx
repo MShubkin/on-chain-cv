@@ -18,7 +18,7 @@ import {
   checkAssetFrozen,
   arToHttp,
 } from "@/lib/program";
-import { CredentialMetadata } from "@/lib/irys";
+import { CredentialMetadata, SkillEntry } from "@/lib/irys";
 
 type VerifyStatus = "loading" | "valid" | "revoked" | "expired" | "issuer_unverified" | "tampered";
 
@@ -239,14 +239,27 @@ export default function CredentialPage() {
             <div className="col-span-2">
               <p className="text-xs text-gray-500 mb-1">Skills</p>
               <div className="flex flex-wrap gap-1.5">
-                {metadata.skills.map((s) => (
-                  <span
-                    key={s}
-                    className="rounded-full bg-gray-800 border border-gray-700 px-2 py-0.5 text-xs text-gray-300"
-                  >
-                    {s}
-                  </span>
-                ))}
+                {(metadata.skills as (SkillEntry | string)[]).map((raw) => {
+                  const s = typeof raw === "string" ? { name: raw } : raw;
+                  return s.url ? (
+                    <a
+                      key={s.name}
+                      href={s.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-full bg-gray-800 border border-purple-700 px-2 py-0.5 text-xs text-purple-400 hover:text-purple-300 hover:border-purple-500 transition-colors"
+                    >
+                      {s.name} ↗
+                    </a>
+                  ) : (
+                    <span
+                      key={s.name}
+                      className="rounded-full bg-gray-800 border border-gray-700 px-2 py-0.5 text-xs text-gray-300"
+                    >
+                      {s.name}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           )}

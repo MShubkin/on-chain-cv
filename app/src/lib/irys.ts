@@ -153,6 +153,11 @@ export function buildCollectionMetadataJson(params: {
   };
 }
 
+export interface SkillEntry {
+  name: string;
+  url?: string;
+}
+
 // JSON schema for a credential's Arweave metadata.
 // The `on_chain_ref` field creates the bidirectional link:
 //   - Credential PDA → core_asset (in Credential.core_asset)
@@ -167,7 +172,7 @@ export interface CredentialMetadata {
   };
   recipient_pubkey: string;
   period: { from: string; to: string } | null;
-  skills: string[];
+  skills: SkillEntry[];
   level: number;
   issued_at: number;
   expires_at: number | null;
@@ -190,7 +195,7 @@ export function buildCredentialMetadataJson(params: {
   recipientPubkey: string;
   periodFrom: string | null;
   periodTo: string | null;
-  skills: string[];
+  skills: SkillEntry[];
   level: number;
   expiresAt: number | null;
   credentialPda: string;
